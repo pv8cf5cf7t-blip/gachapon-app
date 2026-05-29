@@ -8,6 +8,7 @@ on:
       - 'static/gachapon-app/**'
       - 'ios/**'
       - 'capacitor.config.json'
+      - '.github/workflows/ios-build.yml'
 
 jobs:
   build-ios:
@@ -15,13 +16,16 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Debug - list files
+        run: ls -la && cat package.json
+
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version: 20
 
       - name: Install dependencies
-        run: npm install
+        run: npm install 2>&1 || npm install --legacy-peer-deps 2>&1
 
       - name: Cap sync iOS
         run: npx cap sync ios
