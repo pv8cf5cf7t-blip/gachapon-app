@@ -1,0 +1,10 @@
+{
+  "appId": "com.cyberdiviner.xuanji",
+  "appName": "玄机",
+  "webDir": "static",
+  "backgroundColor": "#0a0a0f",
+  "server": {
+    "url": "http://localhost:8000",
+    "cleartext": true
+  }
+}

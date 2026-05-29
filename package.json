@@ -1,0 +1,21 @@
+{
+  "name": "cyber-diviner",
+  "version": "1.0.0",
+  "description": "--- name: fortune-telling description: Use when the user asks for fortune-telling, 算命, 八字, 周易, 易经, 六爻, 占卜, 手相, 面相, 风水, 阳宅, 飞星, divination, or wants a Ba Zi / I Ching / palm reading / Feng Shui analysis. ---",
+  "main": "index.js",
+  "directories": {
+    "test": "tests"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@capacitor/android": "^8.3.4",
+    "@capacitor/cli": "^8.3.4",
+    "@capacitor/core": "^8.3.4",
+    "@capacitor/ios": "^8.3.4"
+  }
+}

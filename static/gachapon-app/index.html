@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>🔮 玄机扭蛋</title>
+<style>
+:root { --bg:#0a0a0f; --card:#1a1a25; --accent:#6366f1; --gold:#f59e0b; --pink:#ec4899; --green:#10b981; }
+
+* { margin:0; padding:0; box-sizing:border-box; }
+body {
+  background:var(--bg); color:#e0e0e0; font-family:"PingFang SC","Microsoft YaHei",sans-serif;
+  min-height:100vh; overflow-x:hidden; user-select:none;
+}
+
+/* ═══════════ MENU SCREEN ═══════════ */
+.menu-screen {
+  display:flex; flex-direction:column; align-items:center; padding:40px 16px 60px;
+  min-height:100vh;
+}
+.menu-title { font-size:28px; font-weight:bold; margin-bottom:8px;
+  background:linear-gradient(135deg,var(--accent),var(--pink)); -webkit-background-clip:text; -webkit-text-fill-color:transparent; }
+.menu-sub { font-size:13px; color:#666; margin-bottom:32px; }
+.engine-grid {
+  display:grid; grid-template-columns:1fr 1fr; gap:14px; width:100%; max-width:380px;
+}
+.engine-card {
+  background:var(--card); border-radius:16px; padding:20px 14px;
+  border:1.5px solid rgba(99,102,241,.15); cursor:pointer; transition:all .2s;
+  display:flex; flex-direction:column; align-items:center; gap:8px;
+}
+.engine-card:active { transform:scale(.96); border-color:var(--accent); background:#1e1e30; }
+.engine-card .e-icon { font-size:36px; }
+.engine-card .e-name { font-size:16px; font-weight:bold; color:#e0e0e0; }
+.engine-card .e-desc { font-size:11px; color:#777; text-align:center; line-height:1.4; }
+
+/* ═══════════ MACHINE SCREEN ═══════════ */
+.machine-screen { display:none; flex-direction:column; align-items:center; padding:20px 0 40px; min-height:100vh; }
+.machine-screen.active { display:flex; }
+.back-btn {
+  align-self:flex-start; margin-left:16px; margin-bottom:8px;
+  background:rgba(99,102,241,.1); border:1px solid rgba(99,102,241,.2); color:#999;
+  padding:6px 14px; border-radius:20px; font-size:13px; cursor:pointer; transition:all .2s;
+}
+.back-btn:active { background:rgba(99,102,241,.2); color:#fff; }
+
+.machine-wrap {
+  position:relative; width:340px; height:480px; perspective:800px; margin-top:8px;
+}
+.machine { position:relative; width:100%; height:100%; }
+.machine-body {
+  position:absolute; bottom:0; left:10%; width:80%; height:65%;
+  background:linear-gradient(180deg,#2a1a3a 0%,#1a0a2a 50%,#0d0615 100%);
+  border-radius:20px 20px 0 0; border:3px solid #3a2a4a;
+  box-shadow:0 0 40px rgba(99,102,241,.15),inset 0 0 30px rgba(99,102,241,.05);
+}
+.machine-glass {
+  position:absolute; top:15%; left:15%; width:70%; height:50%;
+  background:rgba(99,102,241,.08); border-radius:16px; border:2px solid rgba(99,102,241,.25);
+  box-shadow:inset 0 0 20px rgba(99,102,241,.1); overflow:hidden;
+}
+.machine-base {
+  position:absolute; bottom:0; left:5%; width:90%; height:15%;
+  background:linear-gradient(180deg,#1a0a2a,#0d0615); border-top:2px solid #3a2a4a; border-radius:0 0 10px 10px;
+}
+
+/* 投币口 */
+.coin-slot {
+  position:absolute; top:5%; left:50%; transform:translateX(-50%);
+  width:40px; height:6px; background:#1a0a2a; border-radius:3px;
+  border:1px solid #3a2a4a; box-shadow:inset 0 2px 4px rgba(0,0,0,.5);
+}
+
+/* 胶囊 */
+.capsule-container {
+  position:absolute; top:20%; left:50%; transform:translateX(-50%);
+  width:120px; height:120px; display:flex; align-items:center; justify-content:center;
+  transition:all .5s cubic-bezier(.34,1.56,.64,1);
+}
+.capsule {
+  width:60px; height:80px; position:relative; transition:transform .5s cubic-bezier(.34,1.56,.64,1);
+  display:flex; flex-direction:column; align-items:center;
+}
+.capsule-top {
+  width:60px; height:32px; background:linear-gradient(135deg,var(--pink),#c026d3); border-radius:30px 30px 0 0;
+  border:2px solid rgba(236,72,153,.5); box-shadow:0 0 15px rgba(236,72,153,.3);
+}
+.capsule-ring {
+  width:62px; height:8px; background:linear-gradient(90deg,#f59e0b,#fbbf24,#f59e0b);
+  border-radius:2px; z-index:2; margin:-1px 0;
+}
+.capsule-bottom {
+  width:60px; height:40px; background:linear-gradient(180deg,#c026d3,var(--accent)); border-radius:0 0 30px 30px;
+  border:2px solid rgba(99,102,241,.5); box-shadow:0 0 15px rgba(99,102,241,.3);
+}
+
+/* 旋钮 */
+.crank-wrap {
+  position:absolute; right:-60px; top:35%; display:flex; flex-direction:column;
+  align-items:center; gap:6px; cursor:pointer; z-index:30;
+}
+.crank {
+  width:64px; height:64px; border-radius:50%; background:linear-gradient(135deg,#3a2a4a,#1a0a2a);
+  border:3px solid var(--gold); display:flex; align-items:center; justify-content:center;
+  box-shadow:0 0 20px rgba(245,158,11,.2); transition:transform .3s;
+}
+.crank.spinning { animation:crankSpin 2s linear; }
+@keyframes crankSpin { to { transform:rotate(720deg); } }
+.crank-icon { font-size:28px; }
+.crank-label { font-size:12px; color:var(--gold); letter-spacing:4px; }
+
+/* 震动 */
+@keyframes shake {
+  0%,100% { transform:translateX(0); }
+  10%,50%,90% { transform:translateX(-4px); }
+  30%,70% { transform:translateX(4px); }
+}
+@keyframes capsuleFall {
+  0% { top:20%; opacity:1; transform:translateX(-50%) rotate(0deg); }
+  70% { top:75%; opacity:1; transform:translateX(-50%) rotate(360deg); }
+  85% { top:82%; transform:translateX(-50%) rotate(400deg) scale(1.1,0.9); }
+  100% { top:85%; opacity:0; transform:translateX(-50%) rotate(420deg); }
+}
+.capsule-falling { animation:capsuleFall 1.8s ease-in forwards; }
+
+/* 结果面板 */
+.result-panel {
+  position:absolute; bottom:18%; left:12%; width:76%; background:var(--card);
+  border:1px solid rgba(99,102,241,.2); border-radius:14px; padding:14px 12px;
+  transform:scale(0); opacity:0; transition:all .5s cubic-bezier(.34,1.56,.64,1);
+  z-index:20; max-height:200px; overflow-y:auto;
+}
+.result-panel.show { transform:scale(1); opacity:1; }
+.type-tag {
+  display:inline-block; background:var(--accent); color:#fff; padding:2px 10px;
+  border-radius:10px; font-size:11px; margin-bottom:6px;
+}
+.result-title { color:var(--gold); font-size:17px; margin-bottom:8px; }
+.result-text { font-size:13px; line-height:1.55; color:#b0b0c0; white-space:pre-wrap; }
+
+/* 粒子 */
+.particles { position:absolute; top:0; left:0; width:100%; height:100%; pointer-events:none; }
+.particle {
+  position:absolute; width:6px; height:6px; border-radius:50%;
+  animation:particleBurst 1.5s ease-out forwards;
+}
+@keyframes particleBurst {
+  0% { transform:translate(0,0) scale(1); opacity:1; }
+  100% { transform:translate(var(--tx),var(--ty)) scale(0); opacity:0; }
+}
+
+/* 底部抽屉 */
+.drawer {
+  position:absolute; bottom:0; left:15%; width:70%; height:30px;
+  background:linear-gradient(180deg,#1a0a2a,#0d0615); border-radius:0 0 8px 8px;
+  border-top:2px solid #3a2a4a; display:flex; align-items:center; justify-content:center;
+}
+.drawer::after { content:'▼'; font-size:12px; color:#6366f1; }
+
+/* 响应式 */
+@media (max-width:400px) {
+  .machine-wrap { width:300px; height:420px; }
+  .crank-wrap { right:-20px; }
+  .engine-grid { max-width:340px; gap:10px; }
+  .engine-card { padding:14px 10px; }
+  .engine-card .e-icon { font-size:30px; }
+}
+</style>
+</head>
+<body>
+
+<!-- ═══════════ MENU SCREEN ═══════════ -->
+<div class="menu-screen" id="menuScreen">
+  <div class="menu-title">🔮 玄机扭蛋</div>
+  <div class="menu-sub">选一个，开启你的命运胶囊</div>
+  <div class="engine-grid" id="engineGrid"></div>
+</div>
+
+<!-- ═══════════ MACHINE SCREEN ═══════════ -->
+<div class="machine-screen" id="machineScreen">
+  <button class="back-btn" id="backBtn">← 返回</button>
+
+  <div class="machine-wrap">
+    <div class="machine">
+      <div class="machine-body">
+        <div class="coin-slot"></div>
+        <div class="machine-glass" id="glass">
+          <div class="capsule-container" id="capsuleBox">
+            <div class="capsule" id="capsule">
+              <div class="capsule-top"></div>
+              <div class="capsule-ring"></div>
+              <div class="capsule-bottom"></div>
+            </div>
+          </div>
+          <div class="particles" id="particles"></div>
+        </div>
+
+        <div class="result-panel" id="resultPanel">
+          <div class="type-tag" id="typeTag"></div>
+          <div class="result-title" id="resultTitle"></div>
+          <div class="result-text" id="resultText"></div>
+        </div>
+
+        <div class="machine-base">
+          <div class="drawer"></div>
+        </div>
+      </div>
+
+      <div class="crank-wrap" id="crankWrap">
+        <div class="crank" id="crank">
+          <span class="crank-icon">🎰</span>
+        </div>
+        <div class="crank-label">旋 转</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ═══════════ CONFIG ═══════════
+const API_BASE = 'https://xuanjiqimen.com/api';
+
+const ENGINES = [
+  { id:'meihua',   name:'梅花易数', icon:'🌸', endpoint:'/meihua/time',  desc:'体用生克·卦象吉凶', color:'#ec4899' },
+  { id:'iching',   name:'周易占卜', icon:'☯️', endpoint:'/iching/coin',  desc:'六爻铜钱·卦象启示', color:'#6366f1' },
+  { id:'bazi',     name:'八字命理', icon:'📅', endpoint:'/bazi',         desc:'年月日时·十神格局', color:'#f59e0b' },
+  { id:'tarot',    name:'塔罗牌',   icon:'🃏', endpoint:'/tarot',        desc:'三张牌·过去现在未来', color:'#a855f7' },
+  { id:'horoscope',icon:'⭐',       name:'星座运势', endpoint:'/horoscope', desc:'今日星座·能量指引', color:'#10b981' },
+  { id:'cezi',     name:'测字',     icon:'✍️', endpoint:'/cezi',          desc:'一字观天地·万物', color:'#f43f5e' },
+];
+
+// ═══════════ DOM ═══════════
+const menuScreen = document.getElementById('menuScreen');
+const machineScreen = document.getElementById('machineScreen');
+const engineGrid = document.getElementById('engineGrid');
+const backBtn = document.getElementById('backBtn');
+const glass = document.getElementById('glass');
+const capsuleBox = document.getElementById('capsuleBox');
+const capsule = document.getElementById('capsule');
+const crank = document.getElementById('crank');
+const resultPanel = document.getElementById('resultPanel');
+const resultTitle = document.getElementById('resultTitle');
+const resultText = document.getElementById('resultText');
+const typeTag = document.getElementById('typeTag');
+const particles = document.getElementById('particles');
+
+let currentEngine = null;
+let spinning = false;
+
+// ═══════════ BUILD MENU ═══════════
+function buildMenu() {
+  engineGrid.innerHTML = ENGINES.map(e => `
+    <div class="engine-card" data-id="${e.id}" style="border-color:${e.color}22">
+      <div class="e-icon">${e.icon}</div>
+      <div class="e-name">${e.name}</div>
+      <div class="e-desc">${e.desc}</div>
+    </div>
+  `).join('');
+
+  engineGrid.querySelectorAll('.engine-card').forEach(card => {
+    card.addEventListener('click', () => {
+      const id = card.dataset.id;
+      const eng = ENGINES.find(e => e.id === id);
+      if(eng) openMachine(eng);
+    });
+  });
+}
+
+// ═══════════ OPEN MACHINE ═══════════
+function openMachine(engine) {
+  currentEngine = engine;
+  menuScreen.style.display = 'none';
+  machineScreen.classList.add('active');
+  // Reset
+  resultPanel.classList.remove('show');
+  typeTag.textContent = engine.name;
+  resultTitle.textContent = `${engine.icon} ${engine.name}`;
+  resultText.textContent = '点右边的🎰旋转按钮开始';
+  capsuleBox.classList.remove('capsule-falling');
+  capsule.style.transform = '';
+  glass.style.animation = '';
+}
+
+// ═══════════ BACK TO MENU ═══════════
+backBtn.addEventListener('click', () => {
+  machineScreen.classList.remove('active');
+  menuScreen.style.display = 'flex';
+  currentEngine = null;
+});
+
+// ═══════════ PARTICLES ═══════════
+function spawnParticles() {
+  particles.innerHTML = '';
+  const colors = ['#f59e0b','#ec4899','#6366f1','#8b5cf6','#10b981'];
+  for(let i=0;i<30;i++) {
+    const p = document.createElement('div');
+    p.className = 'particle';
+    p.style.background = colors[Math.floor(Math.random()*colors.length)];
+    p.style.left = '50%'; p.style.top = '50%';
+    p.style.setProperty('--tx',(Math.random()-.5)*250+'px');
+    p.style.setProperty('--ty',(Math.random()-.5)*250+'px');
+    p.style.animationDelay = Math.random()*.5+'s';
+    particles.appendChild(p);
+  }
+  setTimeout(()=>particles.innerHTML='',2000);
+}
+
+// ═══════════ SHAKE & DROP ═══════════
+function shakeAndDrop() {
+  glass.style.animation = 'shake .3s ease-in-out';
+  setTimeout(()=>{ glass.style.animation = ''; },300);
+  capsuleBox.classList.add('capsule-falling');
+  setTimeout(() => {
+    capsuleBox.classList.remove('capsule-falling');
+    capsule.style.transform = 'scale(1.3)';
+    spawnParticles();
+  }, 1800);
+}
+
+// ═══════════ BUILD API URL ═══════════
+function buildUrl(engine) {
+  let url = API_BASE + engine.endpoint;
+  if(engine.id === 'bazi') {
+    const y = 1960 + Math.floor(Math.random()*40);
+    const m = 1 + Math.floor(Math.random()*12);
+    const d = 1 + Math.floor(Math.random()*28);
+    const g = Math.random()>.5 ? '男':'女';
+    url += `?date=${y}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}&gender=${g}`;
+  }
+  if(engine.id === 'horoscope') {
+    const today = new Date().toISOString().slice(0,10);
+    url += `?date=${today}&lang=zh`;
+  }
+  if(engine.id === 'tarot') url += '?spread=three';
+  if(engine.id === 'cezi') {
+    const chars = '道天地人明心悟命运福禄寿喜';
+    url += '?char=' + chars[Math.floor(Math.random()*chars.length)];
+  }
+  return url;
+}
+
+// ═══════════ EXTRACT TEXT ═══════════
+function toStr(v) {
+  if(typeof v === 'string') return v;
+  if(v && typeof v === 'object') {
+    if(v.内容) return v.内容;
+    if(v.解读) return toStr(v.解读);
+    if(v.name && v.解读) return `${v.name}：${v.解读}`;
+    if(v.name && v.nature) return `${v.name}(${v.nature})`;
+    if(v.name || v.symbol) return v.name || v.symbol;
+    return JSON.stringify(v);
+  }
+  return String(v);
+}
+
+// ═══════════ GET RESULT ═══════════
+async function getResult(engine) {
+  try {
+    const url = buildUrl(engine);
+    const resp = await fetch(url);
+    const data = await resp.json();
+
+    if(data.error) throw new Error(data.error);
+
+    let title = `${engine.icon} ${engine.name}`;
+    let text = engine.desc;
+
+    if(data.解读) {
+      if(Array.isArray(data.解读) && data.解读.length > 0) {
+        text = data.解读.map(toStr).join('\n\n');
+      } else {
+        text = toStr(data.解读);
+      }
+    } else if(data.msg) {
+      text = toStr(data.msg);
+    } else if(data.简批) {
+      text = toStr(data.简批);
+    } else if(data.结果) {
+      text = toStr(data.结果);
+    } else if(typeof data === 'string') {
+      text = data;
+    }
+
+    const keys = ['综合评分','吉凶','运势','建议','卦名'];
+    for(const k of keys) {
+      if(data[k] && typeof data[k] !== 'object') { title += ` · ${data[k]}`; break; }
+    }
+
+    return { title, text, type:engine.name };
+
+  } catch(e) {
+    const fortunes = [
+      {title:'🌟 大吉',text:'今日运势极佳，诸事顺遂。贵人相助，困难迎刃而解。宜把握时机，大胆行动。'},
+      {title:'✨ 小吉',text:'运势稳中有升，虽有小波折但总体向好。保持耐心，静待花开。谨慎行事，避免冲动。'},
+      {title:'⚡ 中平',text:'运势平稳，无大喜亦无大忧。适合休养生息，反思规划。不宜冒进，守住当下。'},
+      {title:'🌧️ 小凶',text:'运势略有波折，注意人际关系和小人。宜低调行事，避免争执。退一步海阔天空。'},
+      {title:'⛈️ 大凶',text:'今日宜静不宜动，重大决策暂缓。但凶中有吉，危机亦是转机。宜修身养性。'},
+    ];
+    const f = fortunes[Math.floor(Math.random()*fortunes.length)];
+    return {title:f.title, text:f.text, type:engine.name};
+  }
+}
+
+// ═══════════ PULL ═══════════
+async function pull() {
+  if(spinning || !currentEngine) return;
+  spinning = true;
+  crank.classList.add('spinning');
+  resultPanel.classList.remove('show');
+  typeTag.textContent = '占卜中...';
+  resultTitle.textContent = '🔮 正在通灵...';
+  resultText.textContent = '扭蛋正在生成中，请稍候...';
+
+  shakeAndDrop();
+
+  const result = await getResult(currentEngine);
+
+  setTimeout(() => {
+    crank.classList.remove('spinning');
+    typeTag.textContent = result.type;
+    resultTitle.textContent = result.title;
+    resultText.textContent = result.text;
+    resultPanel.classList.add('show');
+    spinning = false;
+  }, 2200);
+}
+
+// ═══════════ EVENTS ═══════════
+crank.addEventListener('click', pull);
+document.addEventListener('keydown', e => {
+  if(e.key === ' ' || e.key === 'Enter') { e.preventDefault(); pull(); }
+});
+
+// ═══════════ INIT ═══════════
+buildMenu();
+</script>
+
+</body>
+</html>
